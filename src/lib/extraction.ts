@@ -1,6 +1,6 @@
 import { Type, type Schema } from "@google/genai";
 
-/** The exact shape we force out of the model. Money is integer cents; no tip. */
+/** The exact shape we force out of the model. Money is integer cents. */
 export type ExtractedReceipt = {
   restaurantName: string | null;
   /** Raw, exactly as printed — normalized client-side by formatReceiptDate. */
@@ -8,6 +8,8 @@ export type ExtractedReceipt = {
   items: ExtractedItem[];
   subtotalCents: number | null;
   taxCents: number | null;
+  /** The printed tip / gratuity / service-charge line, or null if there is none. */
+  tipCents: number | null;
   totalCents: number | null;
 };
 
@@ -37,6 +39,7 @@ export const RECEIPT_SCHEMA: Schema = {
     },
     subtotalCents: { type: Type.INTEGER, nullable: true },
     taxCents: { type: Type.INTEGER, nullable: true },
+    tipCents: { type: Type.INTEGER, nullable: true },
     totalCents: { type: Type.INTEGER, nullable: true },
   },
   required: [
@@ -45,6 +48,7 @@ export const RECEIPT_SCHEMA: Schema = {
     "items",
     "subtotalCents",
     "taxCents",
+    "tipCents",
     "totalCents",
   ],
 };
@@ -62,7 +66,9 @@ LINE ITEMS
 - Do NOT include these as items: subtotal, tax, tip, gratuity, service charge, total, balance due, payment/card lines, change, discounts, or loyalty lines.
 
 TIP
-- Ignore any tip, gratuity, or service-charge line entirely. It is not part of this extraction. Never fold it into the total or any item.
+- tipCents is the tip, gratuity, or automatic service-charge amount printed on the receipt. Report it only as the top-level tipCents field, never as a line item, and never fold it into any item.
+- If more than one such line is printed (e.g. a gratuity and a separate service charge), return their sum.
+- If a tip line is present but blank, written in by hand, or otherwise illegible, return null. If no tip line is printed at all, also return null. Do not treat null as zero and do not calculate it from the total.
 
 DATE
 - Return the date string exactly as printed, in whatever format appears on the paper. Do not reformat it. If a time is printed alongside it, return only the date portion.
@@ -107,6 +113,7 @@ export function validateExtraction(raw: unknown): ExtractedReceipt | null {
     items,
     subtotalCents: toNonNegativeInt(obj.subtotalCents),
     taxCents: toNonNegativeInt(obj.taxCents),
+    tipCents: toNonNegativeInt(obj.tipCents),
     totalCents: toNonNegativeInt(obj.totalCents),
   };
 }

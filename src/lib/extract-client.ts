@@ -63,6 +63,8 @@ function toReceipt(extracted: ExtractedReceipt): Receipt {
     // are derived from items anyway, so a missing subtotal can't corrupt them.
     subtotalCents: extracted.subtotalCents ?? 0,
     taxCents: extracted.taxCents ?? 0,
+    // A missing tip line means no tip — 0, which the user can edit on /summary.
+    tipCents: extracted.tipCents ?? 0,
     totalCents: extracted.totalCents ?? 0,
   };
 }
@@ -79,6 +81,7 @@ export function blankReceipt(): Receipt {
     items: [{ id: newItemId(), name: "", unitPriceCents: 0, quantity: 1 }],
     subtotalCents: 0,
     taxCents: 0,
+    tipCents: 0,
     totalCents: 0,
   };
 }

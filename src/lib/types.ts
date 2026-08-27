@@ -15,6 +15,11 @@ export type Receipt = {
   items: LineItem[];
   subtotalCents: number;
   taxCents: number;
+  /**
+   * The tip printed on the receipt, or 0 when none was printed. The user can
+   * override this on the summary screen (see BillState.tipOverrideCents).
+   */
+  tipCents: number;
   /** As printed. Items are the source of truth once the user edits them. */
   totalCents: number;
 };

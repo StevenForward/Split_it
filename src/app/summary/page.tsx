@@ -5,7 +5,7 @@ import { StepShell } from "@/components/StepShell";
 import { Button } from "@/components/Button";
 import { EditableField } from "@/components/EditableField";
 import { useRequireReceipt } from "@/lib/use-require-receipt";
-import { useBill, updateReceiptItem } from "@/lib/bill-store";
+import { updateBill, useBill, updateReceiptItem } from "@/lib/bill-store";
 import {
   centsToDollarString,
   formatCents,
@@ -71,6 +71,7 @@ export default function SummaryPage() {
         <dl className="space-y-1.5 border-t border-slate-100 px-4 py-3 text-sm">
           <Row label="Subtotal" value={formatCents(totals.subtotalCents)} />
           <Row label="Tax" value={formatCents(totals.taxCents)} />
+          <TipRow tipCents={totals.tipCents} />
           <Row label="Total" value={formatCents(totals.totalCents)} strong />
         </dl>
       </div>
@@ -143,6 +144,31 @@ function ItemRow({ item }: { item: LineItem }) {
         <span>each</span>
       </div>
     </li>
+  );
+}
+
+function TipRow({ tipCents }: { tipCents: number }) {
+  function commitTip(raw: string) {
+    const cents = parseDollarsToCents(raw);
+    if (cents === null) return;
+    // Editing replaces the receipt's tip wholesale; deriveTotals reads this next.
+    updateBill({ tipOverrideCents: Math.max(0, cents) });
+  }
+
+  return (
+    <div className="flex items-baseline justify-between">
+      <dt className="text-slate-500">Tip</dt>
+      <dd className="tabular-nums text-slate-700">
+        <EditableField
+          label="Tip amount"
+          display={formatCents(tipCents)}
+          editValue={centsToDollarString(tipCents)}
+          onCommit={commitTip}
+          inputMode="decimal"
+          className="w-20 text-right tabular-nums"
+        />
+      </dd>
+    </div>
   );
 }
 

@@ -17,8 +17,9 @@ export type BillTotals = {
  * fixes a misread price — so both get recomputed from the items on every read.
  *
  * Tax is deliberately NOT rescaled: it's an amount the restaurant actually
- * charged, not a function of our corrected prices. Tip never comes from the
- * receipt — it's entered by the user on /split, after they've seen the total.
+ * charged, not a function of our corrected prices. Tip starts from whatever the
+ * receipt printed (0 if nothing was printed) and is replaced wholesale by
+ * tipOverrideCents once the user edits it on /summary.
  */
 export function deriveTotals(
   receipt: Receipt,
@@ -29,7 +30,7 @@ export function deriveTotals(
     0,
   );
   const taxCents = receipt.taxCents;
-  const tipCents = tipOverrideCents ?? 0;
+  const tipCents = tipOverrideCents ?? receipt.tipCents;
 
   return {
     subtotalCents,
