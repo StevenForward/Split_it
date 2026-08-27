@@ -1,37 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Split-It
 
-## Getting Started
+Scan a restaurant receipt, then split the bill — evenly, or itemized by what each
+person actually ordered.
 
-First, run the development server:
+No payment processing, no accounts, no database. One bill, one session.
+
+## How it works
+
+1. **Upload** a photo of the receipt
+2. **Review** the extracted line items and correct anything the model misread
+3. **People** — say how many are splitting, optionally name them
+4. **Split** — evenly, or item by item (shared plates can go to several people)
+5. **Totals** — per-person breakdown, with tax and tip allocated in proportion to
+   each person's share of the subtotal
+
+## Stack
+
+- Next.js (App Router) + TypeScript
+- Tailwind CSS
+- Receipt extraction via a vision-capable Claude call returning strict JSON —
+  no OCR library, no retrieval pipeline
+- State lives in a sessionStorage-backed store for the length of one session
+
+## Running it
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Notes on the money math
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Every amount is stored as **integer cents**; dollars only exist at the input and
+display edges. Proportional allocation uses the largest-remainder method, so
+per-person shares always sum back to the exact total — no cents quietly go
+missing in rounding.
 
-## Learn More
+## Status
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# Split_it
+| Phase | Scope | State |
+| --- | --- | --- |
+| 1 | Routing shell, Tailwind, placeholder data | ✅ Done |
+| 2 | Receipt upload + Claude extraction, editable summary | Next |
+| 3 | Equal split, end to end | |
+| 4 | Itemized split: assignment UI, tax/tip allocation, rounding | |
+| 5 | Results polish, styling, responsiveness | |
