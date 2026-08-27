@@ -1,18 +1,27 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { StepShell } from "@/components/StepShell";
 import { Button } from "@/components/Button";
 import { EditableField } from "@/components/EditableField";
 import { useRequireReceipt } from "@/lib/use-require-receipt";
-import { updateBill, useBill, updateReceiptItem } from "@/lib/bill-store";
+import {
+  addReceiptItem,
+  removeReceiptItem,
+  updateBill,
+  updateReceiptDate,
+  updateReceiptItem,
+  updateRestaurantName,
+  useBill,
+} from "@/lib/bill-store";
 import {
   centsToDollarString,
   formatCents,
   lineItemTotalCents,
   parseDollarsToCents,
 } from "@/lib/money";
-import { formatReceiptDate } from "@/lib/date";
+import { toISODate, todayISODate } from "@/lib/date";
 import { deriveTotals } from "@/lib/totals";
 import type { LineItem } from "@/lib/types";
 
@@ -22,6 +31,11 @@ export default function SummaryPage() {
   const router = useRouter();
   const { ready, receipt } = useRequireReceipt();
   const { state } = useBill();
+
+  // A scan that found no date (or a manual entry) starts on today.
+  useEffect(() => {
+    if (ready && receipt && !receipt.date) updateReceiptDate(todayISODate());
+  }, [ready, receipt]);
 
   if (!ready || !receipt) return null;
 
@@ -54,18 +68,39 @@ export default function SummaryPage() {
     >
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <div className="border-b border-slate-100 px-4 py-3">
-          <p className="font-medium text-slate-900">
-            {receipt.restaurantName ?? "Unknown restaurant"}
-          </p>
-          <p className="text-xs text-slate-500">
-            {formatReceiptDate(receipt.date)}
-          </p>
+          <EditableField
+            label="Restaurant name"
+            display={receipt.restaurantName ?? "Unknown restaurant"}
+            editValue={receipt.restaurantName ?? ""}
+            onCommit={updateRestaurantName}
+            className="w-full font-medium text-slate-900"
+          />
+          <input
+            type="date"
+            aria-label="Receipt date"
+            value={toISODate(receipt.date)}
+            onChange={(e) => updateReceiptDate(e.target.value)}
+            className="-mx-1 mt-0.5 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-xs text-slate-500 hover:border-slate-200 hover:bg-slate-50 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          />
         </div>
 
         <ul className="divide-y divide-slate-100">
           {receipt.items.map((item) => (
-            <ItemRow key={item.id} item={item} />
+            <ItemRow
+              key={item.id}
+              item={item}
+              canRemove={receipt.items.length > 1}
+            />
           ))}
+          <li className="px-4 py-3">
+            <button
+              type="button"
+              onClick={addReceiptItem}
+              className="text-sm font-medium text-emerald-700 hover:text-emerald-800"
+            >
+              + Add item
+            </button>
+          </li>
         </ul>
 
         <dl className="space-y-1.5 border-t border-slate-100 px-4 py-3 text-sm">
@@ -87,7 +122,13 @@ export default function SummaryPage() {
   );
 }
 
-function ItemRow({ item }: { item: LineItem }) {
+function ItemRow({
+  item,
+  canRemove,
+}: {
+  item: LineItem;
+  canRemove: boolean;
+}) {
   function commitName(raw: string) {
     const name = raw.trim();
     // An empty name would leave an unidentifiable row, so keep the old one.
@@ -112,8 +153,8 @@ function ItemRow({ item }: { item: LineItem }) {
     <li className="px-4 py-3">
       <div className="flex items-baseline gap-3">
         <EditableField
-          label={`Name of ${item.name}`}
-          display={item.name}
+          label={`Name of ${item.name || "new item"}`}
+          display={item.name || "Item name"}
           editValue={item.name}
           onCommit={commitName}
           className="flex-1 text-sm text-slate-800"
@@ -121,6 +162,16 @@ function ItemRow({ item }: { item: LineItem }) {
         <span className="text-sm font-medium tabular-nums text-slate-900">
           {formatCents(lineItemTotalCents(item.unitPriceCents, item.quantity))}
         </span>
+        {canRemove ? (
+          <button
+            type="button"
+            aria-label={`Remove ${item.name || "item"}`}
+            onClick={() => removeReceiptItem(item.id)}
+            className="-mr-1 shrink-0 rounded-md px-1 text-slate-400 transition-colors hover:text-red-600"
+          >
+            ✕
+          </button>
+        ) : null}
       </div>
 
       <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">

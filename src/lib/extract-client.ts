@@ -1,5 +1,6 @@
 "use client";
 
+import { todayISODate } from "./date";
 import type { ExtractedReceipt } from "./extraction";
 import type { LineItem, Receipt } from "./types";
 
@@ -77,7 +78,7 @@ export function newItemId(): string {
 export function blankReceipt(): Receipt {
   return {
     restaurantName: null,
-    date: null,
+    date: todayISODate(),
     items: [{ id: newItemId(), name: "", unitPriceCents: 0, quantity: 1 }],
     subtotalCents: 0,
     taxCents: 0,

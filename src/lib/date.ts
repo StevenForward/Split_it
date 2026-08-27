@@ -118,6 +118,28 @@ function parseReceiptDate(raw: string): Ymd | null {
   return null;
 }
 
+/** Today in the viewer's local timezone, as ISO yyyy-mm-dd. */
+export function todayISODate(): string {
+  const now = new Date();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${mm}-${dd}`;
+}
+
+/**
+ * Normalize any recognized receipt-date string to ISO yyyy-mm-dd, the shape a
+ * native <input type="date"> needs. Returns "" when the value can't be parsed.
+ */
+export function toISODate(input: string | null | undefined): string {
+  const raw = (input ?? "").trim();
+  if (!raw) return "";
+  const parsed = parseReceiptDate(raw);
+  if (!parsed) return "";
+  const mm = String(parsed.month).padStart(2, "0");
+  const dd = String(parsed.day).padStart(2, "0");
+  return `${parsed.year}-${mm}-${dd}`;
+}
+
 /**
  * Always renders MM/DD/YYYY. Anything unrecognizable is passed through as-is
  * rather than guessed at — showing the user the raw string beats inventing a

@@ -128,3 +128,55 @@ export function updateReceiptItem(
     },
   });
 }
+
+/** Set the restaurant name; an empty string clears it back to null. */
+export function updateRestaurantName(name: string) {
+  const receipt = snapshot.state.receipt;
+  if (!receipt) return;
+  updateBill({ receipt: { ...receipt, restaurantName: name.trim() || null } });
+}
+
+/** Set the receipt date from an ISO yyyy-mm-dd string; empty clears it. */
+export function updateReceiptDate(isoDate: string) {
+  const receipt = snapshot.state.receipt;
+  if (!receipt) return;
+  updateBill({ receipt: { ...receipt, date: isoDate || null } });
+}
+
+/** Append a fresh blank line item (manual entry / a missed row). */
+export function addReceiptItem() {
+  const receipt = snapshot.state.receipt;
+  if (!receipt) return;
+  updateBill({
+    receipt: {
+      ...receipt,
+      items: [
+        ...receipt.items,
+        {
+          id: `item-${crypto.randomUUID()}`,
+          name: "",
+          unitPriceCents: 0,
+          quantity: 1,
+        },
+      ],
+    },
+  });
+}
+
+/**
+ * Drop a line item along with any itemized assignments pointing at it. Refuses
+ * to remove the last row so the receipt always has something to split.
+ */
+export function removeReceiptItem(itemId: string) {
+  const { receipt, assignments } = snapshot.state;
+  if (!receipt || receipt.items.length <= 1) return;
+  const nextAssignments = { ...assignments };
+  delete nextAssignments[itemId];
+  updateBill({
+    receipt: {
+      ...receipt,
+      items: receipt.items.filter((item) => item.id !== itemId),
+    },
+    assignments: nextAssignments,
+  });
+}
