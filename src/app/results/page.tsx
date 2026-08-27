@@ -77,8 +77,6 @@ export default function ResultsPage() {
       </div>
 
       <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
-        Phase 1: placeholder math. The tip control lives on this screen and lands
-        with Phase 3.
       </p>
     </StepShell>
   );
