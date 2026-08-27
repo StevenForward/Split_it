@@ -27,7 +27,7 @@ export default function ResultsPage() {
       title="Here's the damage"
       subtitle={
         state.splitMode === "itemized"
-          ? "Split by item — assignment UI arrives in Phase 4."
+          ? "Split by item and tip."
           : "Split evenly, tax and tip included."
       }
       footer={
