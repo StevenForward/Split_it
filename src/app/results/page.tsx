@@ -6,6 +6,7 @@ import { Button } from "@/components/Button";
 import { useBill } from "@/lib/bill-store";
 import { useRequireReceipt } from "@/lib/use-require-receipt";
 import { formatCents, splitEvenly } from "@/lib/money";
+import { deriveTotals } from "@/lib/totals";
 
 export default function ResultsPage() {
   const router = useRouter();
@@ -17,7 +18,8 @@ export default function ResultsPage() {
   const people = state.people;
   // Phase 1 placeholder: an even split of the printed total. Phase 3 makes this
   // real (with the tip control), Phase 4 adds the itemized path.
-  const shares = splitEvenly(receipt.totalCents, people.length || 1);
+  const totals = deriveTotals(receipt, state.tipOverrideCents);
+  const shares = splitEvenly(totals.totalCents, people.length || 1);
 
   return (
     <StepShell

@@ -4,8 +4,12 @@ import { useSyncExternalStore } from "react";
 import type { Assignments, Person, Receipt, SplitMode } from "./types";
 
 export type BillState = {
-  /** Data URL of the uploaded image, kept only for on-screen preview. */
-  receiptImage: string | null;
+  /**
+   * NOTE: the receipt image is deliberately absent. It lives in component
+   * state for the life of the scan and is never persisted — a base64 phone
+   * photo is 4-10MB and blows the ~5MB sessionStorage quota, which used to
+   * make persist() throw and silently drop the ENTIRE bill on refresh.
+   */
   receipt: Receipt | null;
   people: Person[];
   splitMode: SplitMode | null;
@@ -15,7 +19,6 @@ export type BillState = {
 };
 
 const EMPTY: BillState = {
-  receiptImage: null,
   receipt: null,
   people: [],
   splitMode: null,
@@ -107,4 +110,21 @@ export function useBill() {
   );
   // Module-level functions: already stable, no memoization needed.
   return { state, hydrated, update: updateBill, reset: resetBill };
+}
+
+/** Patch one line item in place, leaving the rest of the receipt untouched. */
+export function updateReceiptItem(
+  itemId: string,
+  patch: Partial<{ name: string; unitPriceCents: number; quantity: number }>,
+) {
+  const receipt = snapshot.state.receipt;
+  if (!receipt) return;
+  updateBill({
+    receipt: {
+      ...receipt,
+      items: receipt.items.map((item) =>
+        item.id === itemId ? { ...item, ...patch } : item,
+      ),
+    },
+  });
 }

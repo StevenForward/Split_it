@@ -3,21 +3,35 @@
 import { useRouter } from "next/navigation";
 import { StepShell } from "@/components/StepShell";
 import { Button } from "@/components/Button";
+import { EditableField } from "@/components/EditableField";
 import { useRequireReceipt } from "@/lib/use-require-receipt";
-import { formatCents, lineItemTotalCents } from "@/lib/money";
+import { useBill, updateReceiptItem } from "@/lib/bill-store";
+import {
+  centsToDollarString,
+  formatCents,
+  lineItemTotalCents,
+  parseDollarsToCents,
+} from "@/lib/money";
 import { formatReceiptDate } from "@/lib/date";
+import { deriveTotals } from "@/lib/totals";
+import type { LineItem } from "@/lib/types";
+
+const MAX_QUANTITY = 99;
 
 export default function SummaryPage() {
   const router = useRouter();
   const { ready, receipt } = useRequireReceipt();
+  const { state } = useBill();
 
   if (!ready || !receipt) return null;
+
+  const totals = deriveTotals(receipt, state.tipOverrideCents);
 
   return (
     <StepShell
       step="summary"
       title="Does this look right?"
-      subtitle="Thermal receipts fade, so check the numbers before we split them."
+      subtitle="Tap any name, quantity, or price to fix what the scan got wrong."
       footer={
         <>
           <Button
@@ -50,40 +64,85 @@ export default function SummaryPage() {
 
         <ul className="divide-y divide-slate-100">
           {receipt.items.map((item) => (
-            <li key={item.id} className="flex items-baseline gap-3 px-4 py-3">
-              <span className="flex-1 text-sm text-slate-800">
-                {item.name}
-                {item.quantity > 1 ? (
-                  <span className="ml-1.5 text-xs text-slate-400">
-                    ×{item.quantity}
-                  </span>
-                ) : null}
-              </span>
-              <span className="text-sm tabular-nums text-slate-900">
-                {formatCents(
-                  lineItemTotalCents(item.unitPriceCents, item.quantity),
-                )}
-              </span>
-            </li>
+            <ItemRow key={item.id} item={item} />
           ))}
         </ul>
 
         <dl className="space-y-1.5 border-t border-slate-100 px-4 py-3 text-sm">
-          <Row label="Subtotal" value={formatCents(receipt.subtotalCents)} />
-          <Row label="Tax" value={formatCents(receipt.taxCents)} />
-          {receipt.tipCents !== null ? (
-            <Row label="Tip" value={formatCents(receipt.tipCents)} />
-          ) : (
-            <Row label="Tip" value="add later" muted />
-          )}
-          <Row label="Total" value={formatCents(receipt.totalCents)} strong />
+          <Row label="Subtotal" value={formatCents(totals.subtotalCents)} />
+          <Row label="Tax" value={formatCents(totals.taxCents)} />
+          <Row label="Total" value={formatCents(totals.totalCents)} strong />
         </dl>
       </div>
 
-      <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
-        Phase 1: read-only. Inline editing of every field lands in Phase 2.
-      </p>
+      {totals.subtotalDiffersFromReceipt ? (
+        <p className="mt-3 rounded-xl bg-sky-50 px-3 py-2 text-xs text-sky-800">
+          Your edits put the subtotal at {formatCents(totals.subtotalCents)}; the
+          receipt read {formatCents(receipt.subtotalCents)}. Totals below use
+          your version.
+        </p>
+      ) : null}
     </StepShell>
+  );
+}
+
+function ItemRow({ item }: { item: LineItem }) {
+  function commitName(raw: string) {
+    const name = raw.trim();
+    // An empty name would leave an unidentifiable row, so keep the old one.
+    if (name) updateReceiptItem(item.id, { name });
+  }
+
+  function commitQuantity(raw: string) {
+    const parsed = Number.parseInt(raw.trim(), 10);
+    if (!Number.isFinite(parsed)) return;
+    updateReceiptItem(item.id, {
+      quantity: Math.min(MAX_QUANTITY, Math.max(1, parsed)),
+    });
+  }
+
+  function commitPrice(raw: string) {
+    const cents = parseDollarsToCents(raw);
+    if (cents === null) return;
+    updateReceiptItem(item.id, { unitPriceCents: Math.max(0, cents) });
+  }
+
+  return (
+    <li className="px-4 py-3">
+      <div className="flex items-baseline gap-3">
+        <EditableField
+          label={`Name of ${item.name}`}
+          display={item.name}
+          editValue={item.name}
+          onCommit={commitName}
+          className="flex-1 text-sm text-slate-800"
+        />
+        <span className="text-sm font-medium tabular-nums text-slate-900">
+          {formatCents(lineItemTotalCents(item.unitPriceCents, item.quantity))}
+        </span>
+      </div>
+
+      <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+        <EditableField
+          label={`Quantity of ${item.name}`}
+          display={String(item.quantity)}
+          editValue={String(item.quantity)}
+          onCommit={commitQuantity}
+          inputMode="numeric"
+          className="w-8 text-center tabular-nums"
+        />
+        <span aria-hidden>×</span>
+        <EditableField
+          label={`Unit price of ${item.name}`}
+          display={formatCents(item.unitPriceCents)}
+          editValue={centsToDollarString(item.unitPriceCents)}
+          onCommit={commitPrice}
+          inputMode="decimal"
+          className="w-20 tabular-nums"
+        />
+        <span>each</span>
+      </div>
+    </li>
   );
 }
 

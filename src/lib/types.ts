@@ -15,8 +15,7 @@ export type Receipt = {
   items: LineItem[];
   subtotalCents: number;
   taxCents: number;
-  /** null = no tip line printed on the receipt. The user sets it on /results. */
-  tipCents: number | null;
+  /** As printed. Items are the source of truth once the user edits them. */
   totalCents: number;
 };
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/Button";
 import { useBill } from "@/lib/bill-store";
 import { useRequireReceipt } from "@/lib/use-require-receipt";
 import { formatCents } from "@/lib/money";
+import { deriveTotals } from "@/lib/totals";
 import type { SplitMode } from "@/lib/types";
 
 export default function SplitPage() {
@@ -15,8 +16,9 @@ export default function SplitPage() {
 
   if (!ready || !receipt) return null;
 
+  const totals = deriveTotals(receipt, state.tipOverrideCents);
   const count = state.people.length || 1;
-  const perHead = Math.round(receipt.totalCents / count);
+  const perHead = Math.round(totals.totalCents / count);
 
   function choose(mode: SplitMode) {
     update({ splitMode: mode });
@@ -27,7 +29,7 @@ export default function SplitPage() {
     <StepShell
       step="split"
       title="How are you splitting?"
-      subtitle={`${count} ${count === 1 ? "person" : "people"} · ${formatCents(receipt.totalCents)} on the bill`}
+      subtitle={`${count} ${count === 1 ? "person" : "people"} · ${formatCents(totals.totalCents)} on the bill`}
       footer={
         <Button
           variant="secondary"
