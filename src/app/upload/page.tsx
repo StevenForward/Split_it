@@ -25,8 +25,7 @@ export default function UploadPage() {
 
   /**
    * The image lives here and nowhere else: a ref for the bytes we POST, and a
-   * blob URL for the preview. Neither touches the persisted store, so a 8MB
-   * phone photo can't blow the sessionStorage quota.
+   * blob URL for the preview. Neither touches the bill store.
    */
   const fileRef = useRef<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -72,7 +71,7 @@ export default function UploadPage() {
       return;
     }
 
-    // Only the extracted JSON is persisted; the photo is dropped here.
+    // Only the extracted JSON goes into the store; the photo is dropped here.
     update({ receipt: result.receipt });
     fileRef.current = null;
     router.push("/summary");

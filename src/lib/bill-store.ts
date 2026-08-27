@@ -6,9 +6,7 @@ import type { Assignments, Person, Receipt, SplitMode } from "./types";
 export type BillState = {
   /**
    * NOTE: the receipt image is deliberately absent. It lives in component
-   * state for the life of the scan and is never persisted — a base64 phone
-   * photo is 4-10MB and blows the ~5MB sessionStorage quota, which used to
-   * make persist() throw and silently drop the ENTIRE bill on refresh.
+   * state for the life of the scan.
    */
   receipt: Receipt | null;
   people: Person[];
@@ -26,18 +24,20 @@ const EMPTY: BillState = {
   tipOverrideCents: null,
 };
 
-const STORAGE_KEY = "split-it:bill";
-
 export type BillSnapshot = {
   state: BillState;
-  /** False until sessionStorage has been read — route guards must wait for it. */
+  /**
+   * False until the client store has taken over from the server snapshot —
+   * route guards must wait for it before deciding to bounce to /upload.
+   */
   hydrated: boolean;
 };
 
 /**
- * The bill lives in a module-level store rather than React state so that
- * sessionStorage can be read once, outside of render, without a hydration
- * mismatch: the server always sees SERVER_SNAPSHOT.
+ * The bill lives in a module-level store rather than React state so it survives
+ * client-side navigation between steps. It is deliberately NOT persisted: a full
+ * page refresh reloads this module, resetting the bill to EMPTY, which sends the
+ * route guards back to /upload with nothing carried over.
  */
 const SERVER_SNAPSHOT: BillSnapshot = { state: EMPTY, hydrated: false };
 
@@ -48,30 +48,15 @@ function emit() {
   for (const listener of listeners) listener();
 }
 
-function loadFromStorage() {
+function hydrate() {
   if (snapshot.hydrated) return;
-  let restored = EMPTY;
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (raw) restored = { ...EMPTY, ...(JSON.parse(raw) as Partial<BillState>) };
-  } catch {
-    // Corrupt or unavailable storage just means we start fresh.
-  }
-  snapshot = { state: restored, hydrated: true };
-}
-
-function persist() {
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot.state));
-  } catch {
-    // Quota or private-mode failures aren't worth breaking the flow over.
-  }
+  snapshot = { state: snapshot.state, hydrated: true };
 }
 
 function subscribe(listener: () => void) {
-  // First subscriber triggers hydration; useSyncExternalStore re-reads the
-  // snapshot right after subscribing, so the restored state lands immediately.
-  loadFromStorage();
+  // First subscriber flips the client store live; useSyncExternalStore re-reads
+  // the snapshot right after subscribing, so `hydrated` lands immediately.
+  hydrate();
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
@@ -88,17 +73,11 @@ function getServerSnapshot(): BillSnapshot {
 
 export function updateBill(patch: Partial<BillState>) {
   snapshot = { state: { ...snapshot.state, ...patch }, hydrated: true };
-  persist();
   emit();
 }
 
 export function resetBill() {
   snapshot = { state: EMPTY, hydrated: true };
-  try {
-    sessionStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // ignore
-  }
   emit();
 }
 
