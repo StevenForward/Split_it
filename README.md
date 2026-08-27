@@ -1,9 +1,12 @@
 # Split-It
 
 Scan a restaurant receipt, then split the bill — evenly, or itemized by what each
-person actually ordered.
+person actually ordered. After you can share the results with the people you came
+with and get their input on the amount
 
-No payment processing, no accounts, no database. One bill, one session.
+No payment processing, no accounts, no database. One bill, one session. 
+No sending money using this either, this is just a tool to help display 
+the bill split.
 
 ## How it works
 
@@ -13,6 +16,8 @@ No payment processing, no accounts, no database. One bill, one session.
 4. **Split** — evenly, or item by item (shared plates can go to several people)
 5. **Totals** — per-person breakdown, with tax and tip allocated in proportion to
    each person's share of the subtotal
+6. **Share** — share the summarized bill with the guests splitting with, with the option to suggest
+   edits if something seems off
 
 ## Stack
 
@@ -38,12 +43,3 @@ display edges. Proportional allocation uses the largest-remainder method, so
 per-person shares always sum back to the exact total — no cents quietly go
 missing in rounding.
 
-## Status
-
-| Phase | Scope | State |
-| --- | --- | --- |
-| 1 | Routing shell, Tailwind, placeholder data | ✅ Done |
-| 2 | Receipt upload + Claude extraction, editable summary | Next |
-| 3 | Equal split, end to end | |
-| 4 | Itemized split: assignment UI, tax/tip allocation, rounding | |
-| 5 | Results polish, styling, responsiveness | |
