@@ -22,7 +22,7 @@ export default function SplitPage() {
 
   function choose(mode: SplitMode) {
     update({ splitMode: mode });
-    router.push("/results");
+    router.push(mode === "itemized" ? "/assign" : "/results");
   }
 
   return (

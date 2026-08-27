@@ -1,5 +1,9 @@
-import type { Receipt } from "./types";
-import { lineItemTotalCents } from "./money";
+import type { Assignments, Person, PersonTotal, Receipt } from "./types";
+import {
+  allocateProportional,
+  lineItemTotalCents,
+  splitEvenly,
+} from "./money";
 
 export type BillTotals = {
   /** Summed from the (possibly edited) line items, never read off the receipt. */
@@ -39,4 +43,53 @@ export function deriveTotals(
     totalCents: subtotalCents + taxCents + tipCents,
     subtotalDiffersFromReceipt: subtotalCents !== receipt.subtotalCents,
   };
+}
+
+/**
+ * Per-person breakdown for the itemized split. Each line item's cost is divided
+ * evenly among the people assigned to it (leftover pennies handed out
+ * left-to-right by splitEvenly). Tax and tip are then spread across people in
+ * proportion to the item subtotal each one racked up, so the per-person totals
+ * always sum back to deriveTotals().totalCents.
+ *
+ * Items with nobody assigned contribute nothing — the /assign screen keeps
+ * "See totals" disabled until every item has a name, so that only bites on a
+ * deep link into half-finished state. Stale assignee ids (a person removed on
+ * /people after assigning) are ignored.
+ */
+export function derivePersonTotals(
+  receipt: Receipt,
+  people: Person[],
+  assignments: Assignments,
+  tipOverrideCents: number | null = null,
+): PersonTotal[] {
+  const { taxCents, tipCents } = deriveTotals(receipt, tipOverrideCents);
+  const indexById = new Map(people.map((person, i) => [person.id, i]));
+  const subtotals = people.map(() => 0);
+
+  for (const item of receipt.items) {
+    const assignees = (assignments[item.id] ?? []).filter((id) =>
+      indexById.has(id),
+    );
+    if (assignees.length === 0) continue;
+    const shares = splitEvenly(
+      lineItemTotalCents(item.unitPriceCents, item.quantity),
+      assignees.length,
+    );
+    assignees.forEach((id, i) => {
+      subtotals[indexById.get(id)!] += shares[i];
+    });
+  }
+
+  const taxShares = allocateProportional(taxCents, subtotals);
+  const tipShares = allocateProportional(tipCents, subtotals);
+
+  return people.map((person, i) => ({
+    personId: person.id,
+    name: person.name,
+    subtotalCents: subtotals[i],
+    taxCents: taxShares[i],
+    tipCents: tipShares[i],
+    totalCents: subtotals[i] + taxShares[i] + tipShares[i],
+  }));
 }
