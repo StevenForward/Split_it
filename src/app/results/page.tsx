@@ -75,9 +75,6 @@ export default function ResultsPage() {
           {formatCents(shares.reduce((a, b) => a + b, 0))}
         </span>
       </div>
-
-      <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
-      </p>
     </StepShell>
   );
 }
