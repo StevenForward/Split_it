@@ -5,6 +5,7 @@ import { StepShell } from "@/components/StepShell";
 import { Button } from "@/components/Button";
 import { useRequireReceipt } from "@/lib/use-require-receipt";
 import { formatCents, lineItemTotalCents } from "@/lib/money";
+import { formatReceiptDate } from "@/lib/date";
 
 export default function SummaryPage() {
   const router = useRouter();
@@ -42,7 +43,9 @@ export default function SummaryPage() {
           <p className="font-medium text-slate-900">
             {receipt.restaurantName ?? "Unknown restaurant"}
           </p>
-          <p className="text-xs text-slate-500">{receipt.date ?? "No date found"}</p>
+          <p className="text-xs text-slate-500">
+            {formatReceiptDate(receipt.date)}
+          </p>
         </div>
 
         <ul className="divide-y divide-slate-100">
