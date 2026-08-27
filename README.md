@@ -16,8 +16,8 @@ the bill split.
 4. **Split** — evenly, or item by item (shared plates can go to several people)
 5. **Totals** — per-person breakdown, with tax and tip allocated in proportion to
    each person's share of the subtotal
-6. **Share** — share the summarized bill with the guests splitting with, with the option to suggest
-   edits if something seems off
+6. **Share** — email the per-person breakdown to everyone who was there; the
+   summary is pre-filled into a draft in your own mail app
 
 ## Stack
 

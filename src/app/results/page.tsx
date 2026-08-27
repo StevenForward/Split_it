@@ -7,6 +7,7 @@ import { useBill } from "@/lib/bill-store";
 import { useRequireReceipt } from "@/lib/use-require-receipt";
 import { formatCents, splitEvenly } from "@/lib/money";
 import { deriveTotals, derivePersonTotals } from "@/lib/totals";
+import { billEmailHref } from "@/lib/share";
 
 export default function ResultsPage() {
   const router = useRouter();
@@ -103,6 +104,20 @@ export default function ResultsPage() {
           {formatCents(collected)}
         </span>
       </div>
+
+      <Button
+        variant="secondary"
+        className="mt-4 w-full"
+        type="button"
+        onClick={() => {
+          window.location.href = billEmailHref(receipt, state);
+        }}
+      >
+        Email this breakdown
+      </Button>
+      <p className="mt-2 text-center text-xs text-slate-400">
+        Opens your mail app with the split filled in — just add who to send it to.
+      </p>
     </StepShell>
   );
 }
